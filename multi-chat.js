@@ -25,13 +25,19 @@ multi.ready(function() {
   })
 
   let swarm = discovery()
+
   swarm.join('multi-chat-chitty-chitty-bang-bang')
-  swarm.on('connection', function(connection, info) {
+
+  // swarm.on('peer', function (peer) {
+  //   console.log(`[PEER] Found: ${peer.host}:${peer.port} – ${peer.id}`)
+  // })
+
+  swarm.on('connection', function (connection, info) {
     console.log(`[PEER] Connected: ${info.host}:${info.port}`)
     pump(connection, multi.replicate({live: true}), connection)
   })
 
-  swarm.on('redundant-connection', function(connection, info) {
+  swarm.on('redundant-connection', function (connection, info) {
     console.log(`[PEER] Redundant: ${info.host}:${info.port}`)
   })
 
@@ -43,7 +49,7 @@ multi.ready(function() {
 multi.on('feed', function(feed, name) {
   console.log(`[New feed: ${name}. Registering for updates on it…]`)
 
-  feed.createReadStream({live: true}).on('data', function(data) {
+  feed.createReadStream({live: true}).on('data', function (data) {
     console.log(`${data.timestamp} ${data.nickname}: ${data.text}`)
   })
 })
