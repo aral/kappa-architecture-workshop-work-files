@@ -55,10 +55,18 @@ const net = network()
 
 net.on('connection', function (socket, details) {
 
-  const locality = details.peer.local ? 'LAN' : 'WAN'
+  // Note details.peer is null if details.client === false
+  let locality = 'n/a'
+  let host = 'n/a'
+  let port = 'n/a'
+  if (details.client) {
+    locality = details.peer.local ? 'LAN' : 'WAN'
+    host = details.peer.host
+    port = details.peer.port
+  }
   const clientType = details.client ? 'we initiated' : 'they initiated'
 
-  log(`📡 Connected: (${details.type}) ${details.peer.host}:${details.peer.port} (${locality}, ${clientType} connection)`)
+  log(`📡 Connected: (${details.type}) ${host}:${port} (${locality}, ${clientType} connection)`)
   log(`📜 Count: ${multi.feeds().length}`)
   pump(socket, multi.replicate({live: true}), socket)
 })
