@@ -1,12 +1,28 @@
-let hypercore = require('hypercore')
-let multifeed = require('multifeed')
+// Chat with multifeed. One possible solution to exercises 8 and 9
+// in the Kappa Architecture Workshop by @noffle et al.
+// https://kappa-db.github.io/workshop/build/01.html
 
-let discovery = require('discovery-swarm')
-let pump = require('pump')
+// Note: this does not build a chronological view over messages.
+// The timestamps will not be in order. At startup, your local messages
+// will be shown first, followed by the messages from any found peers.
+// Similarly, if any peers go offline and return, their messages
+// will be displayed out of order.
+
+const hypercore = require('hypercore')
+const multifeed = require('multifeed')
+const discovery = require('discovery-swarm')
+const pump = require('pump')
 
 // Use the first parameter passed to the command-line app
-// as the unique ID for this node/peer.
-let nodeID = process.argv[2]
+// as the unique topic ID and the second as the unique ID
+// for this node/peer.
+if (process.argv.length != 4) {
+  throw new Error('Syntax: node multi-chat "{topic to join}" "{your handle}"')
+}
+
+const slug = (s) => s.trim().toLocaleLowerCase().replace(' ', '-')
+const topicID = slug(process.argv[2])
+const nodeID = slug(process.argv[3])
 
 // Helpers.
 
@@ -23,7 +39,7 @@ function log (msg, date = new Date()) {
 // Main.
 
 // Set up discovery swarm.
-let swarm = discovery()
+const swarm = discovery()
 swarm.on('connection', function (connection, info) {
   log(`📡 Connected: ${info.host}:${info.port}`)
   log(`📜 Count: ${multi.feeds().length}`)
@@ -39,7 +55,7 @@ swarm.on('connection-closed', function (connection, info) {
 })
 
 // Set up multifeed.
-let multi = multifeed(hypercore, `./multi-chat-${nodeID}`, { valueEncoding: 'json' })
+let multi = multifeed(hypercore, `./multi-chat-${topicID}-${nodeID}`, { valueEncoding: 'json' })
 
 multi.on('feed', function(feed, name) {
   log(`📜 New: ${name}. Registering for updates on it.`)
@@ -71,7 +87,6 @@ multi.ready(function() {
     // replicates. Otherwise, on first run, the symptom is
     // that the feeds do not appear to replicate but work
     // on subsequent runs.
-    swarm.join('multi-chat-chitty-chitty-bang-bang')
+    swarm.join(topicID)
   })
 })
-
