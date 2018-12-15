@@ -4,9 +4,50 @@ let multifeed = require('multifeed')
 let discovery = require('discovery-swarm')
 let pump = require('pump')
 
+// Use the first parameter passed to the command-line app
+// as the unique ID for this node/peer.
 let nodeID = process.argv[2]
 
+// Helpers.
+
+// Returns a formatted time stamp from the passed date (or the current date)
+function formattedDate (date = new Date()) {
+  return `${date.toLocaleDateString('en-UK')} ${date.toLocaleTimeString('en-UK')}`
+}
+
+// Log to console with a timestamp prefix.
+function log (msg, date = new Date()) {
+  console.log(`${formattedDate(date)}: ${msg}`)
+}
+
+// Main.
+
+// Set up discovery swarm.
+let swarm = discovery()
+swarm.on('connection', function (connection, info) {
+  log(`📡 Connected: ${info.host}:${info.port}`)
+  log(`📜 Count: ${multi.feeds().length}`)
+  pump(connection, multi.replicate({live: true}), connection)
+})
+
+swarm.on('redundant-connection', function (connection, info) {
+  log(`📡 Redundant: ${info.host}:${info.port}`)
+})
+
+swarm.on('connection-closed', function (connection, info) {
+  log(`📡 Dropped: ${info.host}:${info.port}`)
+})
+
+// Set up multifeed.
 let multi = multifeed(hypercore, `./multi-chat-${nodeID}`, { valueEncoding: 'json' })
+
+multi.on('feed', function(feed, name) {
+  log(`📜 New: ${name}. Registering for updates on it.`)
+
+  feed.createReadStream({live: true}).on('data', function (data) {
+    log(`💬 ${data.nickname}: ${data.text}`, new Date(data.timestamp))
+  })
+})
 
 multi.ready(function() {
 
@@ -22,34 +63,15 @@ multi.ready(function() {
         timestamp: new Date().toISOString()
       })
     })
-  })
 
-  let swarm = discovery()
-
-  swarm.join('multi-chat-chitty-chitty-bang-bang')
-
-  // swarm.on('peer', function (peer) {
-  //   console.log(`[PEER] Found: ${peer.host}:${peer.port} – ${peer.id}`)
-  // })
-
-  swarm.on('connection', function (connection, info) {
-    console.log(`[PEER] Connected: ${info.host}:${info.port}`)
-    pump(connection, multi.replicate({live: true}), connection)
-  })
-
-  swarm.on('redundant-connection', function (connection, info) {
-    console.log(`[PEER] Redundant: ${info.host}:${info.port}`)
-  })
-
-  swarm.on('connection-closed', function (connection, info) {
-    console.log(`[PEER] Dropped: ${info.host}:${info.port}`)
+    // Note: it’s important to join the swarm only once
+    // the local writer has been created so that when we
+    // get the 'connection' event on the swarm, our local
+    // feed is included in the list of feeds that multifeed
+    // replicates. Otherwise, on first run, the symptom is
+    // that the feeds do not appear to replicate but work
+    // on subsequent runs.
+    swarm.join('multi-chat-chitty-chitty-bang-bang')
   })
 })
 
-multi.on('feed', function(feed, name) {
-  console.log(`[New feed: ${name}. Registering for updates on it…]`)
-
-  feed.createReadStream({live: true}).on('data', function (data) {
-    console.log(`${data.timestamp} ${data.nickname}: ${data.text}`)
-  })
-})
