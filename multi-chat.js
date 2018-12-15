@@ -4,9 +4,9 @@ let multifeed = require('multifeed')
 let discovery = require('discovery-swarm')
 let pump = require('pump')
 
-let personID = process.argv[2]
+let nodeID = process.argv[2]
 
-let multi = multifeed(hypercore, `./multi-chat-${personID}`, { valueEncoding: 'json' })
+let multi = multifeed(hypercore, `./multi-chat-${nodeID}`, { valueEncoding: 'json' })
 
 let swarm = discovery()
 swarm.join('multi-chat-chitty-chitty-bang-bang')
@@ -22,7 +22,7 @@ multi.writer('local', function (err, feed) {
   process.stdin.on('data', function (data) {
     feed.append({
       type: 'chat-message',
-      nickname: personID,
+      nickname: nodeID,
       text: data.toString().trim(),
       timestamp: new Date().toISOString()
     })
