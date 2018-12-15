@@ -3,6 +3,7 @@
   "description": "P2P collaboration workshop",
   "license": "MIT",
   "dependencies": {
+    "@hyperswarm/network": "0.0.4",
     "chalk": "^2.4.1",
     "discovery-swarm": "^5.1.2",
     "hypercore": "^6.20.2",
