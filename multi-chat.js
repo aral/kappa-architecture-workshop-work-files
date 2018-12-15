@@ -8,36 +8,42 @@ let nodeID = process.argv[2]
 
 let multi = multifeed(hypercore, `./multi-chat-${nodeID}`, { valueEncoding: 'json' })
 
-let swarm = discovery()
-swarm.join('multi-chat-chitty-chitty-bang-bang')
-swarm.on('connection', function(peer) {
-  console.log('(New peer connected!)')
-  pump(peer, multi.replicate({live: true}), peer)
-})
-
-multi.writer('local', function (err, feed) {
-  if (err) throw err
-
-  // You can do something with an individual feed here.
-  process.stdin.on('data', function (data) {
-    feed.append({
-      type: 'chat-message',
-      nickname: nodeID,
-      text: data.toString().trim(),
-      timestamp: new Date().toISOString()
-    })
-  })
-
-})
-
 multi.ready(function() {
-  let feeds = multi.feeds()
-  feeds.forEach(function(feed) {
-    console.log('Listening for updates on feed ', feed)
 
-    feed.createReadStream({live: true}).on('data', function(data) {
-      console.log(`${data.timestamp} ${data.nickname}: ${data.text}`)
+  multi.writer('local', function (err, feed) {
+    if (err) throw err
+
+    // You can do something with an individual feed here.
+    process.stdin.on('data', function (data) {
+      feed.append({
+        type: 'chat-message',
+        nickname: nodeID,
+        text: data.toString().trim(),
+        timestamp: new Date().toISOString()
+      })
     })
+  })
+
+  let swarm = discovery()
+  swarm.join('multi-chat-chitty-chitty-bang-bang')
+  swarm.on('connection', function(connection, info) {
+    console.log(`[PEER] Connected: ${info.host}:${info.port}`)
+    pump(connection, multi.replicate({live: true}), connection)
+  })
+
+  swarm.on('redundant-connection', function(connection, info) {
+    console.log(`[PEER] Redundant: ${info.host}:${info.port}`)
+  })
+
+  swarm.on('connection-closed', function (connection, info) {
+    console.log(`[PEER] Dropped: ${info.host}:${info.port}`)
   })
 })
 
+multi.on('feed', function(feed, name) {
+  console.log(`[New feed: ${name}. Registering for updates on it…]`)
+
+  feed.createReadStream({live: true}).on('data', function(data) {
+    console.log(`${data.timestamp} ${data.nickname}: ${data.text}`)
+  })
+})
