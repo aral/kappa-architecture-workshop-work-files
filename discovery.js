@@ -1,13 +1,12 @@
-var discovery = require('discovery-swarm')
+const discovery = require('discovery-swarm')
+const swarm = discovery()
 
-var swarm = discovery()
+const nickname = 'person' +  Math.floor(Math.random() * 42) + 1
 
-let nickname = 'aral' +  Math.floor(Math.random() * 42) + 1
-
-swarm.join('my-p2p-app-bozo-the-clown')
+swarm.join('my-very-very-simple-p2p-app')
 
 swarm.on('connection', function (connection, info) {
-  console.log('found a peer', info)
+  console.log(`Found a peer: ${info.host}:${info.port}`)
 
   process.stdin.on('data', function (data) {
     connection.write(JSON.stringify({
