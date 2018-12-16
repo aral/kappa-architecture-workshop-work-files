@@ -27,10 +27,11 @@ if (process.argv.length != 4) {
 // may clash with existing test topics that others have created, in which case
 // the behaviour will be unpredictable as we’re not doing any error checking on
 // the data structure. This is not an issue in DAT proper.)
-const slug = (s) => s.trim().toLocaleLowerCase().replace(' ', '-')
+const slug = (s) => s.trim().toLocaleLowerCase().replace(/ /g, '-')
 
-const topic = crypto.createHash('sha256')
-  .update(slug(process.argv[2]))
+const topic = slug(process.argv[2])
+const topicDiscoveryKey = crypto.createHash('sha256')
+  .update(topic)
   .digest()
 
 const node = slug(process.argv[3])
@@ -104,7 +105,7 @@ multi.ready(function() {
     // replicates. Otherwise, on first run, the symptom is
     // that the feeds do not appear to replicate but work
     // on subsequent runs.
-    net.join(topic, {
+    net.join(topicDiscoveryKey, {
       lookup: true, // find and connect to peers.
       announce: true // optional: announce self as a connection target.
     })
