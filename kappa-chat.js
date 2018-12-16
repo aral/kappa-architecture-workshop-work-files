@@ -83,14 +83,6 @@ core.api.chats.read().on('data', (data) => {
   log(`💫 ${data.value.nickname}: ${data.value.text}`, new Date(data.value.timestamp))
 })
 
-// core.on('feed', function(feed, name) {
-//   log(`📜 New: ${name}. Registering for updates on it.`)
-
-//   feed.createReadStream({live: true}).on('data', function (data) {
-//     log(`💬 ${data.nickname}: ${data.text}`, new Date(data.timestamp))
-//   })
-// })
-
 // Note: unlike multifeed, kappa-core takes the name of a view (or views)
 // ===== in its ready function. The function will fire when the view (or views)
 //       has caught up.
