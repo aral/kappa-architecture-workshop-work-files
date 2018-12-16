@@ -80,7 +80,7 @@ core.use('chats', timestampView)
 
 // Note: the data value is in the 'value' property.
 core.api.chats.read().on('data', (data) => {
-  log(`💬 ${data.value.nickname}: ${data.value.text}`, new Date(data.value.timestamp))
+  log(`💫 ${data.value.nickname}: ${data.value.text}`, new Date(data.value.timestamp))
 })
 
 // core.on('feed', function(feed, name) {
@@ -97,6 +97,12 @@ core.api.chats.read().on('data', (data) => {
 core.ready('chats', function() {
 
   log("Chats view is ready.")
+
+  // For any newly-received messages, show them as they arrive.
+  // Note: Here, data is returned as an array of objects.
+  core.api.chats.tail(1, (data) => {
+    log(`💬 ${data[0].value.nickname}: ${data[0].value.text}`, new Date(data[0].value.timestamp))
+  })
 
   core.feed('local', function (err, feed) {
     if (err) throw err
