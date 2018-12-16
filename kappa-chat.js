@@ -20,7 +20,7 @@ const safeTopicTitle = slug(unsafeTopicTitle)
 const node = slug(process.argv[3])
 
 const topicDiscoveryKey = crypto.createHash('sha256')
-  .update(`multi-chat-${safeTopicTitle}-${node}`)
+  .update(safeTopicTitle)
   .digest()
 
 log (`Topic: ${unsafeTopicTitle}`)
@@ -68,7 +68,7 @@ net.on('connection', function (socket, details) {
   const clientType = details.client ? 'we initiated' : 'they initiated'
 
   log(`📡 Connected: (${details.type}) ${host}:${port} (${locality}, ${clientType} connection)`)
-  log(`📜 Count: ${multi.feeds().length}`)
+  log(`📜 Count: ${core.feeds().length}`)
   pump(socket, core.replicate({live: true}), socket)
 })
 
