@@ -104,12 +104,10 @@ core.use('chats', timestampView)
 // })
 
 function inputStyle (start, cursor, end) {
-  if (!cursor) cursor = ' '
-  return start + '[' + cursor + ']' + end
+  return start + (cursor + "|") + end
 }
 
-const input = neatInput({style: inputStyle})
-
+const input = neatInput({showCursor: true, style: inputStyle})
 
 // Note: unlike multifeed, kappa-core takes the name of a view (or views)
 // ===== in its ready function. The function will fire when the view (or views)
@@ -156,11 +154,10 @@ core.ready('chats', function() {
 const view = (state) => {
   var screen = []
 
-  blit(screen, drawChatHistory(state.data), 0, termHeight-12)
+  blit(screen, drawChatHistory(state.data), 0, termHeight-13)
 
   return screen.join('\n')
 }
-
 
 const termWidth = process.stdout.columns
 const termHeight = process.stdout.rows
@@ -179,6 +176,7 @@ function drawChatHistory (data) {
   })
   rows.unshift(endRow)
   rows.push(endRow)
+  rows.push('')
   rows.push(input.line())
   return rows
 }
