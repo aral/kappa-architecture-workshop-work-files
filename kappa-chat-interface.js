@@ -163,7 +163,8 @@ const view = (state) => {
 }
 
 function drawChatHistory (data) {
-  const endRow = new Array(termWidth).fill('#').join('')
+  const topRow = `╔${new Array(termWidth - 2).fill('═').join('')}╗`
+  const bottomRow = `╚${new Array(termWidth - 2).fill('═').join('')}╝`
 
   let rows = []
   data.forEach ((datum) => {
@@ -175,7 +176,7 @@ function drawChatHistory (data) {
     if (formattedRow.length < (termWidth - 3)) {
       horizontalPadding = Array((termWidth - formattedRow.length) - 3).fill(' ').join('')
     }
-    formattedRow = `# ${formattedRow}${horizontalPadding}#`
+    formattedRow = `║ ${formattedRow}${horizontalPadding}║`
 
     rows.push(formattedRow)
   })
@@ -185,8 +186,8 @@ function drawChatHistory (data) {
   rows = verticalPadding.concat(rows)
 
   // Add the top and bottom of the text area frame.
-  rows.unshift(endRow)
-  rows.push(endRow)
+  rows.unshift(topRow)
+  rows.push(bottomRow)
 
   // Add the input prompt
   rows.push('')
