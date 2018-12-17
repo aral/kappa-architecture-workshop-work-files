@@ -4,6 +4,7 @@
   "license": "MIT",
   "dependencies": {
     "@hyperswarm/network": "0.0.4",
+    "ansi-diff-stream": "^1.2.1",
     "chalk": "^2.4.1",
     "discovery-swarm": "^5.1.2",
     "hypercore": "^6.20.2",
@@ -12,6 +13,7 @@
     "kappa-view-list": "^1.1.1",
     "memdb": "^1.3.1",
     "multifeed": "^2.0.3",
+    "neat-input": "^1.8.0",
     "neat-log": "^3.1.0",
     "pump": "^3.0.0",
     "txt-blit": "^1.0.0"

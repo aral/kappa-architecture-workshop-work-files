@@ -9,6 +9,10 @@ const memdb = require('memdb')
 const pump = require('pump')
 const crypto = require('crypto')
 
+const neatLog = require('neat-log')
+const neatInput = require('neat-input')
+const blit = require('txt-blit')
+
 // Very basic command-line argument validation: Use the first
 // string parameter passed to the command-line app as topic
 // and the second as the unique name of the participant.
@@ -78,8 +82,8 @@ net.on('connection', (socket, details) => {
   }
   const clientType = details.client ? 'we initiated' : 'they initiated'
 
-  log(`📡 Connected: (${details.type}) ${host}:${port} (${locality}, ${clientType} connection)`)
-  log(`📜 Count: ${core.feeds().length}`)
+  // log(`📡 Connected: (${details.type}) ${host}:${port} (${locality}, ${clientType} connection)`)
+  // log(`📜 Count: ${core.feeds().length}`)
 
   // Start replicating the core with the newly-discovered socket.
   pump(socket, core.replicate({live: true}), socket)
@@ -99,24 +103,32 @@ core.use('chats', timestampView)
 //   log(`💫 ${data.value.nickname}: ${data.value.text}`, new Date(data.value.timestamp))
 // })
 
+function inputStyle (start, cursor, end) {
+  if (!cursor) cursor = ' '
+  return start + '[' + cursor + ']' + end
+}
+
+const input = neatInput({style: inputStyle})
+
+
 // Note: unlike multifeed, kappa-core takes the name of a view (or views)
 // ===== in its ready function. The function will fire when the view (or views)
 //       has caught up.
 core.ready('chats', function() {
 
-  log("Chats view is ready.")
+  // log("Chats view is ready.")
 
   core.feed('local', (err, feed) => {
     if (err) throw err
 
-    log('Local feed is ready.')
+    // log('Local feed is ready.')
 
-    // You can do something with an individual feed here.
-    process.stdin.on('data', (data) => {
+    // Start processing input.
+    input.on('enter', (line) => {
       feed.append({
         type: 'chat-message',
         nickname: node,
-        text: data.toString().trim(),
+        text: line.trim(),
         timestamp: new Date().toISOString()
       })
     })
@@ -137,22 +149,18 @@ core.ready('chats', function() {
 
 
 ////////////////////////////////////////////////////////
-// ui.js
+// Interface
 ////////////////////////////////////////////////////////
 
-const neatLog = require('neat-log')
-const blit = require('txt-blit')
 
 const view = (state) => {
   var screen = []
 
-  blit(screen, drawChatHistory(state.data), 0, termHeight-10)
+  blit(screen, drawChatHistory(state.data), 0, termHeight-12)
 
   return screen.join('\n')
 }
 
-const neat = neatLog(view, { fullscreen: true })
-neat.use(viewController)
 
 const termWidth = process.stdout.columns
 const termHeight = process.stdout.rows
@@ -160,7 +168,7 @@ const termHeight = process.stdout.rows
 function drawChatHistory (data) {
   const endRow = new Array(termWidth).fill('#').join('')
 
-  rows = []
+  let rows = []
   data.forEach ((datum) => {
     const value = datum.value
     let formattedRow = formattedMessage(new Date(value.timestamp), value.nickname, value.text)
@@ -171,13 +179,24 @@ function drawChatHistory (data) {
   })
   rows.unshift(endRow)
   rows.push(endRow)
+  rows.push(input.line())
   return rows
 }
 
-function viewController (state, bus) {
+const viewController = (state, bus) => {
+
+  let _data = []
+
+  input.on('update', () => {
+    bus.emit('render')
+  })
 
   core.api.chats.tail(9, (data) => {
+    _data = data
     state.data = data
     bus.emit('render')
   })
 }
+
+const neat = neatLog(view, { fullscreen: true })
+neat.use(viewController)
