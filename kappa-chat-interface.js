@@ -17,7 +17,7 @@ const blit = require('txt-blit')
 // string parameter passed to the command-line app as topic
 // and the second as the unique name of the participant.
 if (process.argv.length != 4) {
-  throw new Error('Syntax: node kappa-chat "{topic to join}" "{your handle}"')
+  throw new Error('Syntax: node --no-warnings kappa-chat-interface "{topic to join}" "{your handle}"')
 }
 
 // Helpers.
@@ -35,7 +35,6 @@ const formattedMessage = (date = new Date(), nickname, message) => `${formattedD
 
 // Log to console with a timestamp prefix.
 const log = (date = new Date(), nickname, message) => console.log(formattedMessage(date, nickname, message))
-
 
 // “Sluggifies” the passed string: removes spaces and replaces inter-word spaces with dashes.
 const slug = (s) => s.trim().toLocaleLowerCase().replace(/ /g, '-')
@@ -150,18 +149,18 @@ core.ready('chats', function() {
 // Interface
 ////////////////////////////////////////////////////////
 
+const termWidth = process.stdout.columns
+const termHeight = process.stdout.rows
+const textAreaHeight = Math.min(termHeight - 3, 10)
+const numberOfLines = textAreaHeight - 2
 
 const view = (state) => {
   var screen = []
 
-  blit(screen, drawChatHistory(state.data), 0, termHeight-13)
+  blit(screen, drawChatHistory(state.data), 0, termHeight - textAreaHeight)
 
   return screen.join('\n')
 }
-
-const termWidth = process.stdout.columns
-const termHeight = process.stdout.rows
-const textAreaHeight = 10
 
 function drawChatHistory (data) {
   const endRow = new Array(termWidth).fill('#').join('')
@@ -171,13 +170,18 @@ function drawChatHistory (data) {
     const value = datum.value
     let formattedRow = formattedMessage(new Date(value.timestamp), value.nickname, value.text)
 
-    let horizontalPadding = Array((termWidth - formattedRow.length) - 3).fill(' ').join('')
+    // Currently not handling rows that overflow line width.
+    let horizontalPadding = ''
+    if (formattedRow.length < (termWidth - 3)) {
+      horizontalPadding = Array((termWidth - formattedRow.length) - 3).fill(' ').join('')
+    }
     formattedRow = `# ${formattedRow}${horizontalPadding}#`
+
     rows.push(formattedRow)
   })
 
   // If there aren’t enough rows, pad the top.
-  let verticalPadding = Array((textAreaHeight - rows.length -2)).fill(`# ${Array(termWidth-4).fill(' ').join('')} #`)
+  let verticalPadding = Array((textAreaHeight - rows.length - 2)).fill(`# ${Array(termWidth-4).fill(' ').join('')} #`)
   rows = verticalPadding.concat(rows)
 
   // Add the top and bottom of the text area frame.
@@ -196,7 +200,7 @@ const viewController = (state, bus) => {
   // Initialise
   let _data = []
   state.data = _data
-  // bus.emit('render')
+  bus.emit('render')
 
   // Update display on input.
   input.on('update', () => {
@@ -205,7 +209,7 @@ const viewController = (state, bus) => {
   })
 
   // Update display when the chat feed is updated.
-  core.api.chats.tail(9, (data) => {
+  core.api.chats.tail(numberOfLines, (data) => {
     _data = data
     state.data = data
     bus.emit('render')
