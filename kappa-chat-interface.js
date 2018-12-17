@@ -177,7 +177,7 @@ function drawChatHistory (data) {
   rows.unshift(endRow)
   rows.push(endRow)
   rows.push('')
-  rows.push(input.line())
+  rows.push(`> ${input.line()}`)
   return rows
 }
 
