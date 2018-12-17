@@ -161,6 +161,7 @@ const view = (state) => {
 
 const termWidth = process.stdout.columns
 const termHeight = process.stdout.rows
+const textAreaHeight = 10
 
 function drawChatHistory (data) {
   const endRow = new Array(termWidth).fill('#').join('')
@@ -170,25 +171,40 @@ function drawChatHistory (data) {
     const value = datum.value
     let formattedRow = formattedMessage(new Date(value.timestamp), value.nickname, value.text)
 
-    let padding = Array((termWidth - formattedRow.length) - 3).fill(' ').join('')
-    formattedRow = `# ${formattedRow}${padding}#`
+    let horizontalPadding = Array((termWidth - formattedRow.length) - 3).fill(' ').join('')
+    formattedRow = `# ${formattedRow}${horizontalPadding}#`
     rows.push(formattedRow)
   })
+
+  // If there aren’t enough rows, pad the top.
+  let verticalPadding = Array((textAreaHeight - rows.length -2)).fill(`# ${Array(termWidth-4).fill(' ').join('')} #`)
+  rows = verticalPadding.concat(rows)
+
+  // Add the top and bottom of the text area frame.
   rows.unshift(endRow)
   rows.push(endRow)
+
+  // Add the input prompt
   rows.push('')
   rows.push(`> ${input.line()}`)
+
   return rows
 }
 
 const viewController = (state, bus) => {
 
+  // Initialise
   let _data = []
+  state.data = _data
+  // bus.emit('render')
 
+  // Update display on input.
   input.on('update', () => {
+    state.data = _data
     bus.emit('render')
   })
 
+  // Update display when the chat feed is updated.
   core.api.chats.tail(9, (data) => {
     _data = data
     state.data = data
