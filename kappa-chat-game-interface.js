@@ -67,7 +67,7 @@ const playerView = kv(memdb(), (message, next) => {
   if (!message.value.id) next()
 
   const operations = []
-  const messageId = `${message.key}@${message.seq/*uence*/}`
+  const messageId = `${message.key}@${message.seq}`
 
   operations.push({
     key: message.value.id,
@@ -221,10 +221,8 @@ const viewController = (state, bus) => {
     if (value.value.type === 'movement-message') {
       core.api.players.get(key, (error, values) => {
         if (error) throw error
-        if (values.length > 1) {
-          throw new Error('Panic! Player position conflicts are currently not handled.')
-        }
-        let value = values[0]
+        // Take the last value (last writer wins)
+        let value = values[values.length-1]
         if (typeof people[value.value.nickname] === 'undefined') {
           people[value.value.nickname] = {
             nickname: value.value.nickname,
@@ -268,7 +266,6 @@ core.ready(['chats', 'players'], function() {
     // Blit doesn’t handle multi-char apparently.
     // const characters = ['🐇', '🐈', '🐒', '🐛', '🐞', '🐥', '🐩', '🐧', '🐠']
     const characters = ['☻', '✿', '☎', '♫', '❤', '☂', '☀', '♞']
-
 
     // Initial location
     let myX = Math.floor(termWidth/2)
