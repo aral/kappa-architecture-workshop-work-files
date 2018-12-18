@@ -1,5 +1,5 @@
-// One possible solution to Exercise 13.
-// A hack of kappa-chat.js and ui.js.
+// Player movement.
+// (One possible solution to Exercises 15-17.)
 
 const network = require('@hyperswarm/network')
 const kappacore = require('kappa-core')
