@@ -132,14 +132,18 @@ const people = {}
 
 const drawScreen = (data) => {
 
-  for (person in people) {
-    console.log(person.nickname)
-  }
 
   const topRow = `╔${new Array(termWidth - 2).fill('═').join('')}╗`
   const bottomRow = `╚${new Array(termWidth - 2).fill('═').join('')}╝`
 
   let rows = []
+
+  // console.log(people)
+  for (key in people) {
+    let person = people[key]
+    rows.push(`${person.nickname}: ${person.x}, ${person.y}`)
+  }
+
   data.forEach ((datum) => {
     const value = datum.value
     let formattedRow = formattedMessage(new Date(value.timestamp), value.nickname, value.text)
@@ -210,15 +214,16 @@ const viewController = (state, bus) => {
   core.api.players.onUpdate((key, value) => {
     if (value.value.type === 'movement-message') {
       core.api.players.get(key, (error, values) => {
-        console.log('============')
-        console.log(values)
-        values.forEach((value) => {
-          console.log(`Seq: ${value.seq} - x: ${value.value.x}, y: ${value.value.y}`)
-          value.value.links.forEach((link) => {
-            console.log(`Link: ${link}`)
-          })
-          })
-        })
+        if (values.length > 1) {
+          throw new Error('Panic! Player position conflicts are currently not handled.')
+        }
+        let value = values[0]
+        people[value.key].x = value.value.x
+        people[value.key].y = value.value.y
+        // console.log(people[value.key])
+        //console.log(`> Seq: ${value.seq} - x: ${value.value.x}, y: ${value.value.y}`)
+        bus.emit('render')
+      })
     }
   })
 }
@@ -253,9 +258,9 @@ core.ready(['chats', 'players'], function() {
 
     people[myId] = {nickname: node, character: '@', x: myX, y: myY}
 
-    const updatePosition = (deltaX = 0, deltaY = 0) => {
+    // console.log(people[myId])
 
-      console.log('UPDATE')
+    const updatePosition = (deltaX = 0, deltaY = 0) => {
 
       // TODO: Bounds checking
       myX += deltaX
@@ -265,10 +270,9 @@ core.ready(['chats', 'players'], function() {
       // add that as the link for this.
       core.api.players.get(myId, (error, values) => {
         let link = myId
-        console.log("=====> " + error)
         if (error === null) {
+          // Set the link to update the latest local value.
           link = `${myId}@${values[values.length-1].seq}`
-          console.log(`>>>> ${link}`)
         }
         feed.append({
           type: 'movement-message',
@@ -279,7 +283,6 @@ core.ready(['chats', 'players'], function() {
           links: [link]
         })
       })
-
     }
 
     app.input.on('left', () => updatePosition(-1, 0))
