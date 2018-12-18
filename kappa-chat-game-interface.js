@@ -121,12 +121,12 @@ core.use('players', playerView)
 const termWidth = process.stdout.columns
 const termHeight = process.stdout.rows
 const textAreaHeight = Math.min(termHeight - 3, 10)
+const otherAreaHeight = 2
 const numberOfLines = textAreaHeight - 2
 
 const people = {}
 
 const drawScreen = (data) => {
-
 
   const topRow = `╔${new Array(termWidth - 2).fill('═').join('')}╗`
   const bottomRow = `╚${new Array(termWidth - 2).fill('═').join('')}╝`
@@ -134,9 +134,10 @@ const drawScreen = (data) => {
   let rows = []
 
   // console.log(people)
+  let positions = ''
   for (key in people) {
     let person = people[key]
-    rows.push(`${person.nickname}: ${person.x}, ${person.y}`)
+    positions += `${person.nickname}: ${person.x}, ${person.y} `
   }
 
   data.forEach ((datum) => {
@@ -161,6 +162,10 @@ const drawScreen = (data) => {
   rows.unshift(topRow)
   rows.push(bottomRow)
 
+  // Add the player positions
+  rows.unshift('')
+  rows.unshift(positions)
+
   // Add the input prompt
   rows.push('')
   rows.push(`> ${app.input.line()}`)
@@ -171,7 +176,7 @@ const drawScreen = (data) => {
 const view = (state) => {
   var screen = []
 
-  blit(screen, drawScreen(state.data), 0, 0)
+  blit(screen, drawScreen(state.data), 0, termHeight - textAreaHeight - otherAreaHeight)
 
   return screen.join('\n')
 }
