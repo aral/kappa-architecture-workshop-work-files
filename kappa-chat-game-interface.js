@@ -214,12 +214,16 @@ const viewController = (state, bus) => {
   core.api.players.onUpdate((key, value) => {
     if (value.value.type === 'movement-message') {
       core.api.players.get(key, (error, values) => {
+        if (error) throw error
         if (values.length > 1) {
           throw new Error('Panic! Player position conflicts are currently not handled.')
         }
         let value = values[0]
-        people[value.key].x = value.value.x
-        people[value.key].y = value.value.y
+        if (typeof people[value.value.nickname] === 'undefined') {
+          people[value.value.nickname] = {nickname: value.value.nickname}
+        }
+        people[value.value.nickname].x = value.value.x
+        people[value.value.nickname].y = value.value.y
         // console.log(people[value.key])
         //console.log(`> Seq: ${value.seq} - x: ${value.value.x}, y: ${value.value.y}`)
         bus.emit('render')
@@ -250,7 +254,7 @@ core.ready(['chats', 'players'], function() {
       })
     })
 
-    const myId = feed.key.toString('hex')
+    const myId = node //feed.key.toString('hex')
 
     // Initial location
     let myX = Math.floor(termWidth/2)
@@ -269,10 +273,10 @@ core.ready(['chats', 'players'], function() {
       // TODO: Get the last position from the feed and
       // add that as the link for this.
       core.api.players.get(myId, (error, values) => {
-        let link = myId
+        let link = feed.key.toString('hex')
         if (error === null) {
           // Set the link to update the latest local value.
-          link = `${myId}@${values[values.length-1].seq}`
+          link = `${link}@${values[values.length-1].seq}`
         }
         feed.append({
           type: 'movement-message',
