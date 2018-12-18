@@ -108,7 +108,7 @@ net.on('connection', (socket, details) => {
 // ===========
 
 // Set up kappa-core.
-const databasePath = `./db-${topicSlug}`
+const databasePath = `./db-${topicSlug}-${node}`
 const core = kappacore(databasePath, { valueEncoding: 'json' })
 
 core.use('chats', timestampView)
