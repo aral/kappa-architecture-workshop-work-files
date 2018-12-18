@@ -114,11 +114,6 @@ const core = kappacore(databasePath, { valueEncoding: 'json' })
 core.use('chats', timestampView)
 core.use('players', playerView)
 
-// Note: the data value is in the 'value' property.
-// core.api.chats.read().on('data', (data) => {
-//   log(`💫 ${data.value.nickname}: ${data.value.text}`, new Date(data.value.timestamp))
-// })
-
 ////////////////////////////////////////////////////////
 // Interface
 ////////////////////////////////////////////////////////
