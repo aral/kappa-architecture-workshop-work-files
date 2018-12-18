@@ -64,7 +64,7 @@ const timestampView = list(memdb(), (message, next) => {
 
 // Key-value view of player movements.
 const playerView = kv(memdb(), (message, next) => {
-  if (!message.value.id) return next
+  if (!message.value.id) next()
 
   const operations = []
   const messageId = `${message.key}@${message.seq/*uence*/}`
@@ -108,17 +108,16 @@ net.on('connection', (socket, details) => {
 // ===========
 
 // Set up kappa-core.
-const databasePath = `./multi-chat-${topicSlug}-${node}`
+const databasePath = `./db-${topicSlug}`
 const core = kappacore(databasePath, { valueEncoding: 'json' })
 
 core.use('chats', timestampView)
+core.use('players', playerView)
 
-// // Note: the data value is in the 'value' property.
+// Note: the data value is in the 'value' property.
 // core.api.chats.read().on('data', (data) => {
 //   log(`💫 ${data.value.nickname}: ${data.value.text}`, new Date(data.value.timestamp))
 // })
-
-
 
 ////////////////////////////////////////////////////////
 // Interface
@@ -128,24 +127,6 @@ const termWidth = process.stdout.columns
 const termHeight = process.stdout.rows
 const textAreaHeight = Math.min(termHeight - 3, 10)
 const numberOfLines = textAreaHeight - 2
-
-const view = (state) => {
-  var screen = []
-
-  blit(screen, drawChatHistory(state.data), 0, termHeight - textAreaHeight)
-
-  return screen.join('\n')
-}
-
-const app = neatLog(view, {
-  fullscreen: true,
-
-  // Input style for integrated neat-input.
-  style: (start, cursor, end) => {
-    return start + (cursor + "|") + end
-  }
-})
-
 
 function drawChatHistory (data) {
   const topRow = `╔${new Array(termWidth - 2).fill('═').join('')}╗`
@@ -167,7 +148,7 @@ function drawChatHistory (data) {
   })
 
   // If there aren’t enough rows, pad the top.
-  let verticalPadding = Array((textAreaHeight - rows.length - 2)).fill(`# ${Array(termWidth-4).fill(' ').join('')} #`)
+  let verticalPadding = Array((textAreaHeight - rows.length - 2)).fill(`║ ${Array(termWidth-4).fill(' ').join('')} ║`)
   rows = verticalPadding.concat(rows)
 
   // Add the top and bottom of the text area frame.
@@ -181,6 +162,22 @@ function drawChatHistory (data) {
   return rows
 }
 
+const view = (state) => {
+  var screen = []
+
+  blit(screen, drawChatHistory(state.data), 0, termHeight - textAreaHeight)
+
+  return screen.join('\n')
+}
+
+const app = neatLog(view, {
+  fullscreen: true,
+
+  // Input style for integrated neat-input.
+  style: (start, cursor, end) => {
+    return start + (cursor + "|") + end
+  }
+})
 
 const viewController = (state, bus) => {
 
@@ -205,13 +202,10 @@ const viewController = (state, bus) => {
 
 app.use(viewController)
 
-
 // Note: unlike multifeed, kappa-core takes the name of a view (or views)
 // ===== in its ready function. The function will fire when the view (or views)
 //       has caught up.
-core.ready('chats', function() {
-
-  // log("Chats view is ready.")
+core.ready(['chats', 'players'], function() {
 
   core.feed('local', (err, feed) => {
     if (err) throw err
@@ -228,6 +222,34 @@ core.ready('chats', function() {
       })
     })
 
+    const personId = feed.key.toString('hex')
+
+    // Initial location
+    let personX = termWidth/2
+    let personY = termHeight/2
+
+    const updatePosition = (deltaX = 0, deltaY = 0) => {
+
+      // TODO: Bounds checking
+      personX += deltaX
+      personY += deltaY
+
+      // TODO: Get the last position from the feed and
+      // add that as the link for this.
+      feed.append({
+        type: 'movement-message',
+        id: personId,
+        nickname: node,
+        x: personX,
+        y: personY
+      })
+    }
+
+    app.input.on('left', () => updatePosition(-1, 0))
+    app.input.on('right', () => updatePosition(1, 0))
+    app.input.on('up', () => updatePosition(0, -1))
+    app.input.on('down', () => updatePosition(0, 1))
+
     // Note: it’s important to join the swarm only once
     // the local writer has been created so that when we
     // get the 'connection' event on the swarm, our local
@@ -241,6 +263,3 @@ core.ready('chats', function() {
     })
   })
 })
-
-
-
