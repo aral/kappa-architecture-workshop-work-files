@@ -137,7 +137,7 @@ const view = (state) => {
   return screen.join('\n')
 }
 
-const neat = neatLog(view, {
+const app = neatLog(view, {
   fullscreen: true,
 
   // Input style for integrated neat-input.
@@ -146,7 +146,6 @@ const neat = neatLog(view, {
   }
 })
 
-const input = neat.input
 
 function drawChatHistory (data) {
   const topRow = `╔${new Array(termWidth - 2).fill('═').join('')}╗`
@@ -177,7 +176,7 @@ function drawChatHistory (data) {
 
   // Add the input prompt
   rows.push('')
-  rows.push(`> ${input.line()}`)
+  rows.push(`> ${app.input.line()}`)
 
   return rows
 }
@@ -191,7 +190,7 @@ const viewController = (state, bus) => {
   bus.emit('render')
 
   // Update display on input.
-  input.on('update', () => {
+  app.input.on('update', () => {
     state.data = _data
     bus.emit('render')
   })
@@ -204,7 +203,7 @@ const viewController = (state, bus) => {
   })
 }
 
-neat.use(viewController)
+app.use(viewController)
 
 
 // Note: unlike multifeed, kappa-core takes the name of a view (or views)
@@ -220,7 +219,7 @@ core.ready('chats', function() {
     // log('Local feed is ready.')
 
     // Start processing input.
-    input.on('enter', (line) => {
+    app.input.on('enter', (line) => {
       feed.append({
         type: 'chat-message',
         nickname: node,
