@@ -128,7 +128,14 @@ const termHeight = process.stdout.rows
 const textAreaHeight = Math.min(termHeight - 3, 10)
 const numberOfLines = textAreaHeight - 2
 
-function drawChatHistory (data) {
+const people = {}
+
+const drawScreen = (data) => {
+
+  for (person in people) {
+    console.log(person.nickname)
+  }
+
   const topRow = `╔${new Array(termWidth - 2).fill('═').join('')}╗`
   const bottomRow = `╚${new Array(termWidth - 2).fill('═').join('')}╝`
 
@@ -165,7 +172,7 @@ function drawChatHistory (data) {
 const view = (state) => {
   var screen = []
 
-  blit(screen, drawChatHistory(state.data), 0, termHeight - textAreaHeight)
+  blit(screen, drawScreen(state.data), 0, 0)
 
   return screen.join('\n')
 }
@@ -203,8 +210,15 @@ const viewController = (state, bus) => {
   core.api.players.onUpdate((key, value) => {
     if (value.value.type === 'movement-message') {
       core.api.players.get(key, (error, values) => {
-        console.log('Values', values)
-      })
+        console.log('============')
+        console.log(values)
+        values.forEach((value) => {
+          console.log(`Seq: ${value.seq} - x: ${value.value.x}, y: ${value.value.y}`)
+          value.value.links.forEach((link) => {
+            console.log(`Link: ${link}`)
+          })
+          })
+        })
     }
   })
 }
@@ -231,27 +245,41 @@ core.ready(['chats', 'players'], function() {
       })
     })
 
-    const personId = feed.key.toString('hex')
+    const myId = feed.key.toString('hex')
 
     // Initial location
-    let personX = Math.floor(termWidth/2)
-    let personY = Math.floor(termHeight/2)
+    let myX = Math.floor(termWidth/2)
+    let myY = Math.floor(termHeight/2)
+
+    people[myId] = {nickname: node, character: '@', x: myX, y: myY}
 
     const updatePosition = (deltaX = 0, deltaY = 0) => {
 
+      console.log('UPDATE')
+
       // TODO: Bounds checking
-      personX += deltaX
-      personY += deltaY
+      myX += deltaX
+      myY += deltaY
 
       // TODO: Get the last position from the feed and
       // add that as the link for this.
-      feed.append({
-        type: 'movement-message',
-        id: personId,
-        nickname: node,
-        x: personX,
-        y: personY
+      core.api.players.get(myId, (error, values) => {
+        let link = myId
+        console.log("=====> " + error)
+        if (error === null) {
+          link = `${myId}@${values[values.length-1].seq}`
+          console.log(`>>>> ${link}`)
+        }
+        feed.append({
+          type: 'movement-message',
+          id: myId,
+          nickname: node,
+          x: myX,
+          y: myY,
+          links: [link]
+        })
       })
+
     }
 
     app.input.on('left', () => updatePosition(-1, 0))
