@@ -9,7 +9,7 @@ const kappaViewKeyValue = require('kappa-view-kv')
 
 const inMemoryDatabase = memdb()
 
-keyValueIndex = kappaViewKeyValue(
+const keyValueIndex = kappaViewKeyValue(
   // Storage
   inMemoryDatabase,
 
@@ -26,7 +26,7 @@ keyValueIndex = kappaViewKeyValue(
     links: message.value.links || []
   })
 
-  next(null, ops)
+  next(null, operations)
   }
 )
 
@@ -40,21 +40,9 @@ core.feed('local', (error, feed) => {
   feedKeyInHex = feed.key.toString('hex')
 
   const messages = [
-    {
-        key: feedKeyInHex,
-        value: 'bar',
-        links: []
-    },
-    {
-      key: feedKeyInHex,
-      value: 'test',
-      links: []
-    },
-    {
-      key: feedKeyInHex,
-      value: 'quux',
-      links: []
-    }
+    {id: 'foo', value: 'bar', links: []},
+    {id: 'foo', value: 'test', links: []},
+    {id: 'foo', value: 'quux', links: []}
   ]
 
   feed.append(messages[0], (error, sequence0) => {
@@ -70,9 +58,9 @@ core.feed('local', (error, feed) => {
       feed.append(messages[2], (error, sequence2) => {
         if (error) throw error
 
-        core.api.kv.get(feedKeyInHex, (error, values) => {
+        core.api.kv.get('foo', (error, values) => {
           if (error) throw error
-          console.log(`kv for ${kFeedKEy}`, values)
+          console.log(`kv for ${feedKeyInHex}`, values)
         })
       })
     })
