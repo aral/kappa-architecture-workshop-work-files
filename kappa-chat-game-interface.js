@@ -176,6 +176,12 @@ const drawScreen = (data) => {
 const view = (state) => {
   var screen = []
 
+  // Draw the players
+  for (key in people) {
+    let person = people[key]
+    blit(screen, person.character, person.x, person.y)
+  }
+
   blit(screen, drawScreen(state.data), 0, termHeight - textAreaHeight - otherAreaHeight)
 
   return screen.join('\n')
@@ -220,7 +226,10 @@ const viewController = (state, bus) => {
         }
         let value = values[0]
         if (typeof people[value.value.nickname] === 'undefined') {
-          people[value.value.nickname] = {nickname: value.value.nickname}
+          people[value.value.nickname] = {
+            nickname: value.value.nickname,
+            character: value.value.character
+          }
         }
         people[value.value.nickname].x = value.value.x
         people[value.value.nickname].y = value.value.y
@@ -256,11 +265,22 @@ core.ready(['chats', 'players'], function() {
 
     const myId = node //feed.key.toString('hex')
 
+    // Blit doesn’t handle multi-char apparently.
+    // const characters = ['🐇', '🐈', '🐒', '🐛', '🐞', '🐥', '🐩', '🐧', '🐠']
+    const characters = ['☻', '✿', '☎', '♫', '❤', '☂', '☀', '♞']
+
+
     // Initial location
     let myX = Math.floor(termWidth/2)
     let myY = Math.floor(termHeight/2)
 
-    people[myId] = {nickname: node, character: '@', x: myX, y: myY}
+    // Always get the same character for a given node name.
+    // (This is not the place/way to do this – see TODO, below.)
+    const characterOffset = parseInt(node.split('').reduce((e, c) => e + c.charCodeAt(0).toString(), '')) % characters.length
+    let myCharacter = characters[characterOffset]
+    // let myCharacter = characters[Math.floor(Math.random() * characters.length)]
+
+    people[myId] = {nickname: node, character: myCharacter, x: myX, y: myY}
 
     // console.log(people[myId])
 
@@ -270,8 +290,7 @@ core.ready(['chats', 'players'], function() {
       myX += deltaX
       myY += deltaY
 
-      // TODO: Get the last position from the feed and
-      // add that as the link for this.
+      // TODO: The player should be initialised here if non-existent.
       core.api.players.get(myId, (error, values) => {
         let link = feed.key.toString('hex')
         if (error === null) {
@@ -282,6 +301,7 @@ core.ready(['chats', 'players'], function() {
           type: 'movement-message',
           id: myId,
           nickname: node,
+          character: myCharacter,
           x: myX,
           y: myY,
           links: [link]
