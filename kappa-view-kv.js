@@ -60,7 +60,7 @@ core.feed('local', (error, feed) => {
 
         core.api.kv.get('foo', (error, values) => {
           if (error) throw error
-          console.log(`kv for ${feedKeyInHex}`, values)
+          console.log(`kv for ${feedKeyInHex}\n`, values)
         })
       })
     })
