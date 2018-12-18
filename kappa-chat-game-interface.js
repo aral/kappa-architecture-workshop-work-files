@@ -234,8 +234,8 @@ core.ready(['chats', 'players'], function() {
     const personId = feed.key.toString('hex')
 
     // Initial location
-    let personX = termWidth/2
-    let personY = termHeight/2
+    let personX = Math.floor(termWidth/2)
+    let personY = Math.floor(termHeight/2)
 
     const updatePosition = (deltaX = 0, deltaY = 0) => {
 
