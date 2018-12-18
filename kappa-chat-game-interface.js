@@ -198,6 +198,15 @@ const viewController = (state, bus) => {
     state.data = data
     bus.emit('render')
   })
+
+  // Update display when player positions change.
+  core.api.players.onUpdate((key, value) => {
+    if (value.value.type === 'movement-message') {
+      core.api.players.get(key, (error, values) => {
+        console.log('Values', values)
+      })
+    }
+  })
 }
 
 app.use(viewController)
