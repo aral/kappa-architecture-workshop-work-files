@@ -283,9 +283,14 @@ core.ready(['chats', 'players'], function() {
 
     const updatePosition = (deltaX = 0, deltaY = 0) => {
 
-      // TODO: Bounds checking
       myX += deltaX
       myY += deltaY
+
+      // Wrap around if necessary.
+      if (myX > termWidth - 1) myX = 1
+      if (myX < 1) myX = termWidth - 1
+      if (myY > termHeight - textAreaHeight - otherAreaHeight - 1) myY = 2
+      if (myY < 2) myY = termHeight - textAreaHeight - otherAreaHeight - 1
 
       // TODO: The player should be initialised here if non-existent.
       core.api.players.get(myId, (error, values) => {
