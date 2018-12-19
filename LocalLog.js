@@ -31,6 +31,8 @@ class LocalLog extends EventEmitter
   }
 }
 
+module.exports = LocalLog
+
 // Test
 
 // const log = new LocalLog()
