@@ -121,26 +121,27 @@ const termWidth = process.stdout.columns
 const termHeight = process.stdout.rows
 const textAreaHeight = Math.min(termHeight - 3, 10)
 const otherAreaHeight = 2
+const logAreaHeight = 6
 const numberOfLines = textAreaHeight - 2
 
 const people = {}
 
-const drawScreen = (data) => {
+const messageLineFormatter = (value) => {
+  return formattedMessage(new Date(value.timestamp), value.nickname, value.text)
+}
 
+const textRectangle = (rectangleHeightInLines, lineFormatterFunction, data) => {
   const topRow = `╔${new Array(termWidth - 2).fill('═').join('')}╗`
   const bottomRow = `╚${new Array(termWidth - 2).fill('═').join('')}╝`
 
   let rows = []
 
-  let positions = ''
-  for (key in people) {
-    let person = people[key]
-    positions += `${person.nickname}: ${person.x}, ${person.y} `
-  }
-
   data.forEach ((datum) => {
-    const value = datum.value
-    let formattedRow = formattedMessage(new Date(value.timestamp), value.nickname, value.text)
+    let formattedRow = datum
+
+    if (typeof datum !== 'string') {
+      formattedRow = lineFormatterFunction(datum.value)
+    }
 
     // Currently not handling rows that overflow line width.
     let horizontalPadding = ''
@@ -153,12 +154,28 @@ const drawScreen = (data) => {
   })
 
   // If there aren’t enough rows, pad the top.
-  let verticalPadding = Array((textAreaHeight - rows.length - 2)).fill(`║ ${Array(termWidth-4).fill(' ').join('')} ║`)
+  let verticalPadding = Array((rectangleHeightInLines - rows.length - 2)).fill(`║ ${Array(termWidth-4).fill(' ').join('')} ║`)
   rows = verticalPadding.concat(rows)
 
   // Add the top and bottom of the text area frame.
   rows.unshift(topRow)
   rows.push(bottomRow)
+
+  return rows
+}
+
+const drawScreen = (data) => {
+
+  let rows = []
+
+  let positions = ''
+  for (key in people) {
+    let person = people[key]
+    positions += `${person.nickname}: ${person.x}, ${person.y} `
+  }
+
+  const messagesTextRectangle = textRectangle(textAreaHeight, messageLineFormatter, data)
+  rows = rows.concat(messagesTextRectangle)
 
   // Add the player positions
   rows.unshift('')
