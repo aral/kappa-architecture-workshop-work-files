@@ -230,12 +230,13 @@ const drawScreen = (state) => {
 const view = (state) => {
   var screen = []
 
-  // Draw the players
+  // Draw the players.
   for (key in state.players) {
     let person = state.players[key]
     blit(screen, person.character, person.x, person.y)
   }
 
+  // Draw the rest of the screen.
   let screenY = termHeight - textAreaHeight - otherAreaHeight - logAreaHeight
   blit(screen, drawScreen(state), 0, screenY)
 
@@ -251,9 +252,9 @@ const app = neatLog(view, {
   }
 })
 
-const viewController = (state, bus) => {
 
-  // Initialise
+const viewController = (state, bus) => {
+  // Initialise state.
   state.data = []
   state.lines = []
   state.players = players
@@ -270,6 +271,7 @@ const viewController = (state, bus) => {
     bus.emit('render')
   })
 
+  // Update display on local log updates.
   log.tail(numberOfLogLines, (lines) => {
     state.lines = lines
     bus.emit('render')
