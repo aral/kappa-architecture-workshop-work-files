@@ -274,15 +274,18 @@ const viewController = (state, bus) => {
       core.api.players.get(key, (error, values) => {
         if (error) throw error
         // Take the last value (last writer wins)
-        let value = values[values.length-1]
-        if (typeof state.people[value.value.nickname] === 'undefined') {
-          state.people[value.value.nickname] = {
-            nickname: value.value.nickname,
-            character: value.value.character
+        let value = values[values.length-1].value
+        let nickname = value.nickname
+        let character = value.character
+        if (typeof state.people[nickname] === 'undefined') {
+          state.people[nickname] = {
+            nickname,
+            character
           }
         }
-        state.people[value.value.nickname].x = value.value.x
-        state.people[value.value.nickname].y = value.value.y
+        let person = state.people[nickname]
+        person.x = value.x
+        person.y = value.y
         bus.emit('render')
       })
     }
