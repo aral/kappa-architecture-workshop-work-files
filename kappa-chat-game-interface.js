@@ -126,8 +126,8 @@ const textAreaHeight = Math.min(termHeight - otherAreaHeight - logAreaHeight, 10
 const numberOfLines = textAreaHeight - 2
 const numberOfLogLines = logAreaHeight - 2
 
-// Initialise people.
-let people = {}
+// Initialise players.
+let players = {}
 
 const myId = node //feed.key.toString('hex')
 
@@ -145,7 +145,7 @@ const characterOffset = parseInt(node.split('').reduce((e, c) => e + c.charCodeA
 let myCharacter = characters[characterOffset]
 // let myCharacter = characters[Math.floor(Math.random() * characters.length)]
 
-people[myId] = {nickname: node, character: myCharacter, x: myInitialX, y: myInitialY}
+players[myId] = {nickname: node, character: myCharacter, x: myInitialX, y: myInitialY}
 
 
 const messageLineFormatter = (value) => {
@@ -188,8 +188,8 @@ const textRectangle = (rectangleHeightInLines, lineFormatterFunction, data) => {
 
 const drawPlayerPositionsRow = (state) => {
   let positions = ''
-  for (key in state.people) {
-    let person = state.people[key]
+  for (key in state.players) {
+    let person = state.players[key]
     positions += `${person.nickname}: ${person.x}, ${person.y} `
   }
 
@@ -224,8 +224,8 @@ const view = (state) => {
   var screen = []
 
   // Draw the players
-  for (key in state.people) {
-    let person = state.people[key]
+  for (key in state.players) {
+    let person = state.players[key]
     blit(screen, person.character, person.x, person.y)
   }
 
@@ -249,7 +249,7 @@ const viewController = (state, bus) => {
   // Initialise
   state.data = []
   state.lines = []
-  state.people = people
+  state.players = players
   bus.emit('render')
 
   // Update display on input.
@@ -277,13 +277,13 @@ const viewController = (state, bus) => {
         let value = values[values.length-1].value
         let nickname = value.nickname
         let character = value.character
-        if (typeof state.people[nickname] === 'undefined') {
-          state.people[nickname] = {
+        if (typeof state.players[nickname] === 'undefined') {
+          state.players[nickname] = {
             nickname,
             character
           }
         }
-        let person = state.people[nickname]
+        let person = state.players[nickname]
         person.x = value.x
         person.y = value.y
         bus.emit('render')
@@ -321,8 +321,8 @@ core.ready(['chats', 'players'], function() {
       // TODO: The player should be initialised here if non-existent.
       core.api.players.get(myId, (error, values) => {
 
-        let myX = people[myId].x + deltaX
-        let myY = people[myId].y + deltaY
+        let myX = players[myId].x + deltaX
+        let myY = players[myId].y + deltaY
 
         // Wrap around if necessary.
         const screenLeft = 1
@@ -340,8 +340,8 @@ core.ready(['chats', 'players'], function() {
           link = `${link}@${values[values.length-1].seq}`
         }
 
-        people[myId].x = myX
-        people[myId].y = myY
+        players[myId].x = myX
+        players[myId].y = myY
 
         feed.append({
           type: 'movement-message',
