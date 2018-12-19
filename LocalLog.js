@@ -21,7 +21,7 @@ class LocalLog extends EventEmitter
     numberOfLines = parseInt(`${numberOfLines}`)
 
     this.on('add', () => {
-      const _tail = this._log.slice(-1 * numberOfLines).join("\n")
+      const _tail = this._log.slice(-1 * numberOfLines)
       callback(_tail)
     })
   }
@@ -43,7 +43,7 @@ module.exports = LocalLog
 
 // log.tail (3, (lines) => {
 //   console.log("\n===")
-//   console.log(lines)
+//   console.log(lines.join("\n"))
 //   console.log("===")
 // })
 

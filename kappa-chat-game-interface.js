@@ -96,8 +96,8 @@ net.on('connection', (socket, details) => {
   }
   const clientType = details.client ? 'we initiated' : 'they initiated'
 
-  log.push(`📡 Connected: (${details.type}) ${host}:${port} (${locality}, ${clientType} connection)`)
-  log.push(`📜 Count: ${core.feeds().length}`)
+  log.push(`Connected: (${details.type}) ${host}:${port} (${locality}, ${clientType} connection)`)
+  log.push(`Count: ${core.feeds().length}`)
 
   // Start replicating the core with the newly-discovered socket.
   pump(socket, core.replicate({live: true}), socket)
@@ -117,12 +117,14 @@ core.use('players', playerView)
 // Interface
 ////////////////////////////////////////////////////////
 
+// Note: these measurements are not infallible; might explode if console is not tall enough.
 const termWidth = process.stdout.columns
 const termHeight = process.stdout.rows
-const textAreaHeight = Math.min(termHeight - 3, 10)
 const otherAreaHeight = 2
 const logAreaHeight = 6
+const textAreaHeight = Math.min(termHeight - otherAreaHeight - logAreaHeight, 10)
 const numberOfLines = textAreaHeight - 2
+const numberOfLogLines = logAreaHeight - 2
 
 const people = {}
 
@@ -164,7 +166,7 @@ const textRectangle = (rectangleHeightInLines, lineFormatterFunction, data) => {
   return rows
 }
 
-const drawScreen = (data) => {
+const drawScreen = (state) => {
 
   let rows = []
 
@@ -174,7 +176,12 @@ const drawScreen = (data) => {
     positions += `${person.nickname}: ${person.x}, ${person.y} `
   }
 
-  const messagesTextRectangle = textRectangle(textAreaHeight, messageLineFormatter, data)
+  // Draw the local log.
+  const localLogRectangle = textRectangle(logAreaHeight, null, state.lines)
+  rows = rows.concat(localLogRectangle)
+
+  // Draw the messages.
+  const messagesTextRectangle = textRectangle(textAreaHeight, messageLineFormatter, state.data)
   rows = rows.concat(messagesTextRectangle)
 
   // Add the player positions
@@ -197,7 +204,8 @@ const view = (state) => {
     blit(screen, person.character, person.x, person.y)
   }
 
-  blit(screen, drawScreen(state.data), 0, termHeight - textAreaHeight - otherAreaHeight)
+  let screenY = termHeight - textAreaHeight - otherAreaHeight - logAreaHeight
+  blit(screen, drawScreen(state), 0, screenY)
 
   return screen.join('\n')
 }
@@ -214,20 +222,23 @@ const app = neatLog(view, {
 const viewController = (state, bus) => {
 
   // Initialise
-  let _data = []
-  state.data = _data
+  state.data = []
+  state.lines = []
   bus.emit('render')
 
   // Update display on input.
   app.input.on('update', () => {
-    state.data = _data
     bus.emit('render')
   })
 
   // Update display when the chat feed is updated.
   core.api.chats.tail(numberOfLines, (data) => {
-    _data = data
     state.data = data
+    bus.emit('render')
+  })
+
+  log.tail(numberOfLogLines, (lines) => {
+    state.lines = lines
     bus.emit('render')
   })
 
@@ -303,10 +314,14 @@ core.ready(['chats', 'players'], function() {
         myY += deltaY
 
         // Wrap around if necessary.
-        if (myX > termWidth - 1) myX = 1
-        if (myX < 1) myX = termWidth - 1
-        if (myY > termHeight - textAreaHeight - otherAreaHeight - 1) myY = 2
-        if (myY < 2) myY = termHeight - textAreaHeight - otherAreaHeight - 1
+        const screenLeft = 1
+        const screenRight = termWidth - 1
+        const screenTop = 2
+        const screenBottom = termHeight - textAreaHeight - otherAreaHeight - logAreaHeight - 1
+        if (myX > screenRight) myX = screenLeft
+        if (myX < screenLeft) myX = screenRight
+        if (myY > screenBottom) myY = screenTop
+        if (myY < screenTop) myY = screenBottom
 
         let link = feed.key.toString('hex')
         if (error === null) {
