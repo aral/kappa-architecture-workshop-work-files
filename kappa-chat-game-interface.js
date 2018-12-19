@@ -121,10 +121,17 @@ core.use('players', playerView)
 const termWidth = process.stdout.columns
 const termHeight = process.stdout.rows
 const otherAreaHeight = 2
-const logAreaHeight = 6
+const logAreaHeight = 8
 const textAreaHeight = Math.min(termHeight - otherAreaHeight - logAreaHeight, 10)
 const numberOfLines = textAreaHeight - 2
 const numberOfLogLines = logAreaHeight - 2
+
+const minimumTerminalHeightRequired = textAreaHeight + logAreaHeight + otherAreaHeight + 4
+
+if (termHeight < minimumTerminalHeightRequired) {
+  console.log(`\nPlease increase the height of your terminal window and try again. Minimum lines needed is ${minimumTerminalHeightRequired}. You have ${termHeight}.\n`)
+  process.exit()
+}
 
 // Initialise players.
 let players = {}
@@ -137,7 +144,7 @@ const characters = ['☻', '✿', '☎', '♫', '❤', '☂', '☀', '♞']
 
 // Initial location
 const myInitialX = Math.floor(termWidth/2)
-const myInitialY = Math.floor(termHeight/2)
+const myInitialY = Math.floor((termHeight - textAreaHeight - logAreaHeight)/2)
 
 // Always get the same character for a given node name.
 // (This is not the place/way to do this – see TODO, below.)
