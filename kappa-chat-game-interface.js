@@ -13,6 +13,8 @@ const crypto = require('crypto')
 const neatLog = require('neat-log')
 const blit = require('txt-blit')
 
+const log = new (require('./LocalLog'))()
+
 // Very basic command-line argument validation: Use the first
 // string parameter passed to the command-line app as topic
 // and the second as the unique name of the participant.
@@ -32,9 +34,6 @@ const formattedDate = (date = new Date()) => {
 
 // Format and return a chat message
 const formattedMessage = (date = new Date(), nickname, message) => `${formattedDate(date)} ${nickname}: ${message}`
-
-// Log to console with a timestamp prefix.
-const log = (date = new Date(), nickname, message) => console.log(formattedMessage(date, nickname, message))
 
 // “Sluggifies” the passed string: removes spaces and replaces inter-word spaces with dashes.
 const slug = (s) => s.trim().toLocaleLowerCase().replace(/ /g, '-')
@@ -97,8 +96,8 @@ net.on('connection', (socket, details) => {
   }
   const clientType = details.client ? 'we initiated' : 'they initiated'
 
-  // log(`📡 Connected: (${details.type}) ${host}:${port} (${locality}, ${clientType} connection)`)
-  // log(`📜 Count: ${core.feeds().length}`)
+  log.push(`📡 Connected: (${details.type}) ${host}:${port} (${locality}, ${clientType} connection)`)
+  log.push(`📜 Count: ${core.feeds().length}`)
 
   // Start replicating the core with the newly-discovered socket.
   pump(socket, core.replicate({live: true}), socket)
@@ -133,7 +132,6 @@ const drawScreen = (data) => {
 
   let rows = []
 
-  // console.log(people)
   let positions = ''
   for (key in people) {
     let person = people[key]
@@ -231,8 +229,6 @@ const viewController = (state, bus) => {
         }
         people[value.value.nickname].x = value.value.x
         people[value.value.nickname].y = value.value.y
-        // console.log(people[value.key])
-        //console.log(`> Seq: ${value.seq} - x: ${value.value.x}, y: ${value.value.y}`)
         bus.emit('render')
       })
     }
@@ -246,10 +242,12 @@ app.use(viewController)
 //       has caught up.
 core.ready(['chats', 'players'], function() {
 
+  log.push('Kappa core views are ready.')
+
   core.feed('local', (err, feed) => {
     if (err) throw err
 
-    // log('Local feed is ready.')
+    log.push('Local feed is ready.')
 
     // Start processing input.
     app.input.on('enter', (line) => {
@@ -278,8 +276,6 @@ core.ready(['chats', 'players'], function() {
     // let myCharacter = characters[Math.floor(Math.random() * characters.length)]
 
     people[myId] = {nickname: node, character: myCharacter, x: myX, y: myY}
-
-    // console.log(people[myId])
 
     const updatePosition = (deltaX = 0, deltaY = 0) => {
 
