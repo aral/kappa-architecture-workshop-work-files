@@ -126,7 +126,27 @@ const textAreaHeight = Math.min(termHeight - otherAreaHeight - logAreaHeight, 10
 const numberOfLines = textAreaHeight - 2
 const numberOfLogLines = logAreaHeight - 2
 
-const people = {}
+// Initialise people.
+let people = {}
+
+const myId = node //feed.key.toString('hex')
+
+// Blit doesn’t handle multi-char apparently.
+// const characters = ['🐇', '🐈', '🐒', '🐛', '🐞', '🐥', '🐩', '🐧', '🐠']
+const characters = ['☻', '✿', '☎', '♫', '❤', '☂', '☀', '♞']
+
+// Initial location
+const myInitialX = Math.floor(termWidth/2)
+const myInitialY = Math.floor(termHeight/2)
+
+// Always get the same character for a given node name.
+// (This is not the place/way to do this – see TODO, below.)
+const characterOffset = parseInt(node.split('').reduce((e, c) => e + c.charCodeAt(0).toString(), '')) % characters.length
+let myCharacter = characters[characterOffset]
+// let myCharacter = characters[Math.floor(Math.random() * characters.length)]
+
+people[myId] = {nickname: node, character: myCharacter, x: myInitialX, y: myInitialY}
+
 
 const messageLineFormatter = (value) => {
   return formattedMessage(new Date(value.timestamp), value.nickname, value.text)
@@ -166,15 +186,24 @@ const textRectangle = (rectangleHeightInLines, lineFormatterFunction, data) => {
   return rows
 }
 
+const drawPlayerPositionsRow = (state) => {
+  let positions = ''
+  for (key in state.people) {
+    let person = state.people[key]
+    positions += `${person.nickname}: ${person.x}, ${person.y} `
+  }
+
+  return positions
+}
+
 const drawScreen = (state) => {
 
   let rows = []
 
-  let positions = ''
-  for (key in people) {
-    let person = people[key]
-    positions += `${person.nickname}: ${person.x}, ${person.y} `
-  }
+  // Draw the player positions row.
+  const playerPositionsRow = drawPlayerPositionsRow(state)
+  rows.push(playerPositionsRow)
+  rows.push('')
 
   // Draw the local log.
   const localLogRectangle = textRectangle(logAreaHeight, null, state.lines)
@@ -183,10 +212,6 @@ const drawScreen = (state) => {
   // Draw the messages.
   const messagesTextRectangle = textRectangle(textAreaHeight, messageLineFormatter, state.data)
   rows = rows.concat(messagesTextRectangle)
-
-  // Add the player positions
-  rows.unshift('')
-  rows.unshift(positions)
 
   // Add the input prompt
   rows.push('')
@@ -199,8 +224,8 @@ const view = (state) => {
   var screen = []
 
   // Draw the players
-  for (key in people) {
-    let person = people[key]
+  for (key in state.people) {
+    let person = state.people[key]
     blit(screen, person.character, person.x, person.y)
   }
 
@@ -224,6 +249,7 @@ const viewController = (state, bus) => {
   // Initialise
   state.data = []
   state.lines = []
+  state.people = people
   bus.emit('render')
 
   // Update display on input.
@@ -249,14 +275,14 @@ const viewController = (state, bus) => {
         if (error) throw error
         // Take the last value (last writer wins)
         let value = values[values.length-1]
-        if (typeof people[value.value.nickname] === 'undefined') {
-          people[value.value.nickname] = {
+        if (typeof state.people[value.value.nickname] === 'undefined') {
+          state.people[value.value.nickname] = {
             nickname: value.value.nickname,
             character: value.value.character
           }
         }
-        people[value.value.nickname].x = value.value.x
-        people[value.value.nickname].y = value.value.y
+        state.people[value.value.nickname].x = value.value.x
+        state.people[value.value.nickname].y = value.value.y
         bus.emit('render')
       })
     }
@@ -287,31 +313,13 @@ core.ready(['chats', 'players'], function() {
       })
     })
 
-    const myId = node //feed.key.toString('hex')
-
-    // Blit doesn’t handle multi-char apparently.
-    // const characters = ['🐇', '🐈', '🐒', '🐛', '🐞', '🐥', '🐩', '🐧', '🐠']
-    const characters = ['☻', '✿', '☎', '♫', '❤', '☂', '☀', '♞']
-
-    // Initial location
-    let myX = Math.floor(termWidth/2)
-    let myY = Math.floor(termHeight/2)
-
-    // Always get the same character for a given node name.
-    // (This is not the place/way to do this – see TODO, below.)
-    const characterOffset = parseInt(node.split('').reduce((e, c) => e + c.charCodeAt(0).toString(), '')) % characters.length
-    let myCharacter = characters[characterOffset]
-    // let myCharacter = characters[Math.floor(Math.random() * characters.length)]
-
-    people[myId] = {nickname: node, character: myCharacter, x: myX, y: myY}
-
     const updatePosition = (deltaX = 0, deltaY = 0) => {
 
       // TODO: The player should be initialised here if non-existent.
       core.api.players.get(myId, (error, values) => {
 
-        myX += deltaX
-        myY += deltaY
+        let myX = people[myId].x + deltaX
+        let myY = people[myId].y + deltaY
 
         // Wrap around if necessary.
         const screenLeft = 1
@@ -328,6 +336,9 @@ core.ready(['chats', 'players'], function() {
           // Set the link to update the latest local value.
           link = `${link}@${values[values.length-1].seq}`
         }
+
+        people[myId].x = myX
+        people[myId].y = myY
 
         feed.append({
           type: 'movement-message',
